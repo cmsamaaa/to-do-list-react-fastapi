@@ -1,35 +1,92 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import axios from 'axios';
 
+import { useState, useEffect } from 'react';
+
+import Todo from './components/TodoList';
+import CreateTodo from './components/CreateTodo';
+
+/* eslint-disable no-unused-vars */
 function App() {
-  const [count, setCount] = useState(0)
+    const [todoList, setTodoList] = useState([]);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    const [isEdit, setIsEdit] = useState(false);
+
+    useEffect(() => {
+        const getTodoList = async () => {
+            const response = await axios.get('http://127.0.0.1:8000/todo');
+            const dataList = Object.keys(response.data).map((key) => [
+                key,
+                response.data[key],
+            ]);
+            setTodoList(dataList);
+        };
+
+        getTodoList();
+    }, []);
+
+    const addPost = (postData) => {
+        axios
+            .post('http://127.0.0.1:8000/todo/create', postData)
+            .then((response) => {
+                if (response.status == 200) {
+                    setTodoList((existingPosts) => [
+                        ...existingPosts,
+                        [postData.title, postData.content],
+                    ]);
+                }
+            });
+    };
+
+    const updatePost = (postData) => {
+        axios
+            .post('http://127.0.0.1:8000/todo/update', postData)
+            .then((response) => {
+                if (response.status == 200) window.location.reload(true);
+            });
+    };
+
+    const deletePost = (event, title) => {
+        axios.post('http://127.0.0.1:8000/todo/delete', { title: title });
+        window.location.reload(true);
+    };
+
+    const submitHandler = (event) => {
+        event.preventDefault();
+        const postData = {
+            title: title,
+            content: content,
+        };
+        if (isEdit) updatePost(postData);
+        else addPost(postData);
+        setTitle('');
+        setContent('');
+    };
+
+    const loadEditPost = async (event, title) => {
+        const response = await axios.get(`http://127.0.0.1:8000/todo/${title}`);
+        setTitle(title);
+        setContent(response.data.msg);
+        setIsEdit(true);
+    };
+
+    return (
+        <>
+            <CreateTodo
+                onSubmitPost={submitHandler}
+                title={title}
+                content={content}
+                setTitle={setTitle}
+                setContent={setContent}
+            />
+            <Todo
+                todoList={todoList}
+                loadEditPost={loadEditPost}
+                onDeletePost={deletePost}
+            />
+        </>
+    );
 }
 
-export default App
+export default App;
