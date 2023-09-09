@@ -1,6 +1,7 @@
 from typing import Union
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 class Item(BaseModel):
@@ -8,6 +9,14 @@ class Item(BaseModel):
     content: str | None = None
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 temp_mem = {
     "test1": "msg1",
